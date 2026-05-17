@@ -69,7 +69,7 @@ type Props = {
 }
 
 export default function VideoScrollSequence({
-  scrollHeightVh = 480,
+  scrollHeightVh = 760,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -216,20 +216,28 @@ export default function VideoScrollSequence({
                 }}
               >
                 {beat.eyebrow && (
-                  <span className="mb-5 inline-block text-xs font-medium uppercase tracking-[0.32em] text-white/60">
+                  <span className="mb-4 inline-block text-[11px] font-medium uppercase tracking-[0.32em] text-white/60">
                     {beat.eyebrow}
                   </span>
                 )}
-                {/* Display: weight 500, tracking negativo (design.md §3) */}
-                <h2 className="text-4xl font-medium leading-[0.8] tracking-[-1px] md:text-7xl">
-                  {beat.title.split('\n').map((line, j) => (
-                    <span key={j} className="block">
+                {/* Display: weight 500, tracking negativo (design.md §3).
+                   En móvil el texto fluye horizontal (sin salto forzado);
+                   el salto de línea solo se aplica en pantallas md+. */}
+                <h2 className="text-xl font-medium leading-[1.2] tracking-[-0.5px] sm:text-3xl md:text-6xl md:leading-[1.05] md:tracking-[-1px]">
+                  {beat.title.split('\n').map((line, j, arr) => (
+                    <span key={j}>
                       {line}
+                      {j < arr.length - 1 && (
+                        <>
+                          {' '}
+                          <br className="hidden md:block" />
+                        </>
+                      )}
                     </span>
                   ))}
                 </h2>
                 {beat.subtitle && (
-                  <p className="mx-auto mt-6 max-w-xl text-base font-normal text-white/70">
+                  <p className="mx-auto mt-4 max-w-xl text-sm font-normal text-white/70 md:mt-6 md:text-base">
                     {beat.subtitle}
                   </p>
                 )}
