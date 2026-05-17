@@ -63,6 +63,51 @@ function beatStyle(progress: number, at: number) {
   return { opacity: eased, y: d * 44 }
 }
 
+/**
+ * Título de una sola línea horizontal que se reescala para caber siempre
+ * en el ancho disponible, sin desbordar ni partirse en vertical.
+ */
+function FitTitle({ text }: { text: string }) {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const innerRef = useRef<HTMLSpanElement>(null)
+  const [scale, setScale] = useState(1)
+
+  useLayoutEffect(() => {
+    const fit = () => {
+      const wrap = wrapRef.current
+      const inner = innerRef.current
+      if (!wrap || !inner) return
+      const avail = wrap.clientWidth
+      const natural = inner.scrollWidth
+      if (natural > 0) setScale(Math.min(1, avail / natural))
+    }
+    fit()
+    const ro = new ResizeObserver(fit)
+    if (wrapRef.current) ro.observe(wrapRef.current)
+    window.addEventListener('resize', fit)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', fit)
+    }
+  }, [text])
+
+  return (
+    <div ref={wrapRef} className="w-full">
+      <span
+        ref={innerRef}
+        className="inline-block whitespace-nowrap font-medium leading-[1.05] tracking-[-0.5px] md:tracking-[-1px]"
+        style={{
+          fontSize: 'clamp(1.5rem, 6vw, 4.5rem)',
+          transform: `scale(${scale})`,
+          transformOrigin: 'center',
+        }}
+      >
+        {text}
+      </span>
+    </div>
+  )
+}
+
 type Props = {
   /** Duración del scroll en vh. Más alto = animación más lenta y textos más espaciados. */
   scrollHeightVh?: number
@@ -102,7 +147,8 @@ export default function VideoScrollSequence({
     }
   }, [])
 
-  // Dibujo "cover" con soporte retina
+  // Dibujo "contain" con soporte retina: el frame se ve completo,
+  // sin recortes ni zoom; el fondo negro rellena el resto.
   const draw = (index: number) => {
     const canvas = canvasRef.current
     const img = imagesRef.current[index]
@@ -121,21 +167,13 @@ export default function VideoScrollSequence({
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-    const ir = img.naturalWidth / img.naturalHeight
-    const cr = cw / ch
-    let dw = cw
-    let dh = ch
-    let dx = 0
-    let dy = 0
-    if (ir > cr) {
-      dh = ch
-      dw = ch * ir
-      dx = (cw - dw) / 2
-    } else {
-      dw = cw
-      dh = cw / ir
-      dy = (ch - dh) / 2
-    }
+    // "contain": escala para que el frame entero quepa en el canvas
+    const scale = Math.min(cw / img.naturalWidth, ch / img.naturalHeight)
+    const dw = img.naturalWidth * scale
+    const dh = img.naturalHeight * scale
+    const dx = (cw - dw) / 2
+    const dy = (ch - dh) / 2
+
     ctx.clearRect(0, 0, cw, ch)
     ctx.drawImage(img, dx, dy, dw, dh)
   }
@@ -207,7 +245,7 @@ export default function VideoScrollSequence({
             return (
               <div
                 key={idx}
-                className="absolute max-w-3xl text-center text-white will-change-transform"
+                className="absolute w-[90vw] max-w-3xl text-center text-white will-change-transform"
                 style={{
                   opacity: s.opacity,
                   transform: `translateY(${s.y}px)`,
@@ -220,15 +258,9 @@ export default function VideoScrollSequence({
                     {beat.eyebrow}
                   </span>
                 )}
-                {/* Display: weight 500, tracking negativo (design.md §3).
-                   Una sola línea horizontal; el tamaño fluido (clamp) se
-                   adapta al ancho para que nunca se apile en vertical. */}
-                <h2
-                  className="whitespace-nowrap font-medium leading-[1.05] tracking-[-0.5px] md:tracking-[-1px]"
-                  style={{ fontSize: 'clamp(0.85rem, 4vw, 3.75rem)' }}
-                >
-                  {beat.title.replace(/\n/g, ' ')}
-                </h2>
+                {/* Display: una sola línea horizontal, reescalada para
+                   caber siempre en el ancho disponible (design.md §3). */}
+                <FitTitle text={beat.title.replace(/\n/g, ' ')} />
                 {beat.subtitle && (
                   <p className="mx-auto mt-4 max-w-xl text-sm font-normal text-white/70 md:mt-6 md:text-base">
                     {beat.subtitle}
