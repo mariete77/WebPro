@@ -64,8 +64,9 @@ function beatStyle(progress: number, at: number) {
 }
 
 /**
- * Título de una sola línea horizontal que se reescala para caber siempre
- * en el ancho disponible, sin desbordar ni partirse en vertical.
+ * Título que se adapta:
+ * - Mobile: se parte en líneas naturales con font-size fijo
+ * - Desktop: una sola línea horizontal reescalada para caber en el ancho
  */
 function FitTitle({ text }: { text: string }) {
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -77,6 +78,11 @@ function FitTitle({ text }: { text: string }) {
       const wrap = wrapRef.current
       const inner = innerRef.current
       if (!wrap || !inner) return
+      // Solo aplicar scale en pantallas anchas (≥640px)
+      if (window.innerWidth < 640) {
+        setScale(1)
+        return
+      }
       const avail = wrap.clientWidth
       const natural = inner.scrollWidth
       if (natural > 0) setScale(Math.min(1, avail / natural))
@@ -95,11 +101,16 @@ function FitTitle({ text }: { text: string }) {
     <div ref={wrapRef} className="w-full">
       <span
         ref={innerRef}
-        className="inline-block whitespace-nowrap font-medium leading-[1.05] tracking-[-0.5px] md:tracking-[-1px]"
+        className="inline-block leading-[1.1] tracking-[-0.5px] md:tracking-[-1px]"
         style={{
-          fontSize: 'clamp(1.5rem, 6vw, 4.5rem)',
-          transform: `scale(${scale})`,
+          // Mobile: font-size natural con wrapping allowed
+          // Desktop: reescalado para caber en una línea
+          fontSize: 'clamp(1.75rem, 5vw, 4.5rem)',
+          transform: scale < 1 ? `scale(${scale})` : undefined,
           transformOrigin: 'center',
+          // Permitir wrapping en mobile
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
         }}
       >
         {text}
@@ -262,7 +273,7 @@ export default function VideoScrollSequence({
                    caber siempre en el ancho disponible (design.md §3). */}
                 <FitTitle text={beat.title.replace(/\n/g, ' ')} />
                 {beat.subtitle && (
-                  <p className="mx-auto mt-4 max-w-xl text-sm font-normal text-white/70 md:mt-6 md:text-base">
+                  <p className="mx-auto mt-4 max-w-xl text-sm text-white/70 sm:text-base md:mt-6">
                     {beat.subtitle}
                   </p>
                 )}
