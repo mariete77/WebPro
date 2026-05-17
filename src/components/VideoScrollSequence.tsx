@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
@@ -197,9 +197,8 @@ export default function VideoScrollSequence({
           className="absolute inset-0 block h-full w-full"
         />
 
-        {/* Degradados para legibilidad y profundidad */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/70 via-black/25 to-black/80" />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(0,0,0,0.55)_100%)]" />
+        {/* Sin overlays: los frames se ven a plena luz/color.
+           La legibilidad del texto se resuelve con text-shadow. */}
 
         {/* Beats narrativos: aparecen y desaparecen con el scroll */}
         <div className="absolute inset-0 flex items-center justify-center px-6">
@@ -213,6 +212,7 @@ export default function VideoScrollSequence({
                   opacity: s.opacity,
                   transform: `translateY(${s.y}px)`,
                   pointerEvents: s.opacity > 0.5 ? 'auto' : 'none',
+                  textShadow: '0 2px 12px rgba(0,0,0,0.85)',
                 }}
               >
                 {beat.eyebrow && (
@@ -221,20 +221,13 @@ export default function VideoScrollSequence({
                   </span>
                 )}
                 {/* Display: weight 500, tracking negativo (design.md §3).
-                   En móvil el texto fluye horizontal (sin salto forzado);
-                   el salto de línea solo se aplica en pantallas md+. */}
-                <h2 className="text-xl font-medium leading-[1.2] tracking-[-0.5px] sm:text-3xl md:text-6xl md:leading-[1.05] md:tracking-[-1px]">
-                  {beat.title.split('\n').map((line, j, arr) => (
-                    <span key={j}>
-                      {line}
-                      {j < arr.length - 1 && (
-                        <>
-                          {' '}
-                          <br className="hidden md:block" />
-                        </>
-                      )}
-                    </span>
-                  ))}
+                   Una sola línea horizontal; el tamaño fluido (clamp) se
+                   adapta al ancho para que nunca se apile en vertical. */}
+                <h2
+                  className="whitespace-nowrap font-medium leading-[1.05] tracking-[-0.5px] md:tracking-[-1px]"
+                  style={{ fontSize: 'clamp(0.85rem, 4vw, 3.75rem)' }}
+                >
+                  {beat.title.replace(/\n/g, ' ')}
                 </h2>
                 {beat.subtitle && (
                   <p className="mx-auto mt-4 max-w-xl text-sm font-normal text-white/70 md:mt-6 md:text-base">
