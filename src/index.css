@@ -1,27 +1,31 @@
 @import "tailwindcss";
 
-/* ── Design System: monocromo, minimalista, gallery-like ──
-   Basado en design.md (inspirado en Artemii Lebedev). */
+/* ── Design System: Atrevido, Audaz, Memorale ──
+   Inspirado en frontend-design: distinctive, production-grade aesthetics */
 @theme {
-  /* Paleta neutral — sin colores de marca */
+  /* Paleta dramática con acentos cálidos */
   --color-white: #ffffff;
   --color-black: #000000;
-  --color-near-black: #020202;
-  --color-very-dark: #090909;
-  --color-mid-gray: #5e5e5e;
-  --color-light-gray: #a0a0a0;
-  --color-overlay: #efefef;
+  --color-near-black: #0a0a0a;
+  --color-very-dark: #111111;
+  --color-accent: #ff6b35; /* Terracotta vibrante */
+  --color-accent-secondary: #ffd166; /* Amarillo mostaza */
+  --color-accent-tertiary: #06d6a0; /* Verde menta */
+  --color-mid-gray: #6b7280;
+  --color-light-gray: #d1d5db;
+  --color-overlay: rgba(255, 255, 255, 0.03);
 
-  /* Tipografía: Readex Pro (PruebaDesign.md) */
-  --font-sans: 'Readex Pro', system-ui, -apple-system, sans-serif;
+  /* Tipografía distintiva: Playfair Display para títulos, Plus Jakarta Sans para cuerpo */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 
-  /* Escala de espaciado base-4 (design.md §5) */
-  --spacing-2xl: 44px;
-  --spacing-3xl: 52px;
-  --spacing-4xl: 112px;
-  --spacing-5xl: 152px;
-  --spacing-6xl: 168px;
-  --spacing-7xl: 180px;
+  /* Escala de espaciado generosa */
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+  --spacing-4xl: 128px;
+  --spacing-5xl: 168px;
+  --spacing-6xl: 192px;
+  --spacing-7xl: 224px;
 }
 
 * {
@@ -40,18 +44,27 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Tipografía hero: gigante, condensada y ajustada (PruebaDesign.md) */
+/* Tipografía hero: gigante, elegante con tracking dramático */
 .hero-title {
-  letter-spacing: -0.04em;
-  line-height: 0.95;
+  letter-spacing: -0.08em;
+  line-height: 0.92;
+  font-family: var(--font-display);
+}
+
+/* Subtítulo elegante */
+.hero-subtitle {
+  letter-spacing: 0.15em;
+  line-height: 1.4;
+  font-family: var(--font-sans);
+  font-weight: 300;
 }
 
 body {
   font-family: var(--font-sans);
-  background: var(--color-black);
+  background: var(--color-near-black);
   color: var(--color-white);
   -webkit-font-smoothing: antialiased;
-  letter-spacing: 0;
+  letter-spacing: 0.01em;
 }
 
 #root {
@@ -59,4 +72,30 @@ body {
   max-width: 100%;
   margin: 0;
   text-align: left;
+  /* Efecto de textura sutil en el fondo */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+/* Efectos de hover dramáticos */
+.hover-lift {
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+/* Texto con gradiente */
+.text-gradient {
+  background: linear-gradient(135deg, #ffffff 0%, var(--color-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Bordes con gradiente */
+.border-gradient {
+  border: 1px solid transparent;
+  background: linear-gradient(var(--color-near-black), var(--color-near-black)) padding-box,
+              linear-gradient(135deg, var(--color-accent), var(--color-accent-secondary)) border-box;
 }
