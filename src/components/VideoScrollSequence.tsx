@@ -1,110 +1,248 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 gsap.registerPlugin(ScrollTrigger)
 
 // Secuencia de frames generada con ffmpeg desde el vídeo openart-enhanced.
-// 147 imágenes webp servidas desde public/images/ → /images/frame_001.webp …
+// Dos juegos compuestos para cada formato:
+//   · Escritorio (apaisado): public/images/frame_001.webp …
+//   · Móvil    (vertical)  : public/images/mobile/frame_001.webp …
 const FRAME_COUNT = 147
-const framePath = (i: number) =>
-  `/images/frame_${String(i + 1).padStart(3, '0')}.webp`
 
-// Beats narrativos: cada texto aparece centrado en `at` (progreso 0..1)
-// y se desvanece al alejarse. Ajusta libremente textos y posiciones.
+// true cuando el viewport es de móvil (se fija al montar; cambiar de tamaño
+// no recarga los 147 frames a mitad de sesión).
+const isMobileViewport = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia('(max-width: 767px)').matches
+
+const framePath = (i: number, mobile: boolean) =>
+  `/images/${mobile ? 'mobile/' : ''}frame_${String(i + 1).padStart(3, '0')}.webp`
+
+// Beats narrativos estilo hero: palabras gigantes escalonadas que aparecen
+// en `at` (progreso 0..1) y se desvanecen al alejarse.
+// Dirección desde la que entra el beat (y hacia la opuesta sale).
+type Dir = 'bottom' | 'top' | 'left' | 'right'
+
+type Contact = {
+  tel: string
+  email: string
+  address: string
+  hours: string
+}
+
+type MenuItem = { name: string; price: string }
+// Cada sección de la carta entra/sale de forma independiente: `from` define
+// la dirección y `atOffset` desfasa su aparición respecto al beat.
+type MenuSection = {
+  title: string
+  from: Dir
+  atOffset: number
+  items: MenuItem[]
+}
+
+// Cada plato de la galería entra/sale solo: `from` dirección, `atOffset` desfase.
+type GalleryItem = {
+  src: string
+  label: string
+  from: Dir
+  atOffset: number
+}
+
+// Cada reseña entra/sale sola: `from` dirección, `atOffset` desfase.
+type Review = {
+  quote: string
+  author: string
+  rating: number
+  from: Dir
+  atOffset: number
+}
+
 type Beat = {
   at: number
-  eyebrow?: string
-  title: string
+  from: Dir
+  words?: string[] // 2–4 palabras gigantes escalonadas
   subtitle?: string
+  // Si está presente, el beat son reseñas de clientes escalonadas.
+  reviews?: Review[]
+  // Si está presente, el beat es una galería visual de platos.
+  gallery?: GalleryItem[]
+  // Si está presente, el beat se renderiza como bloque de contacto/reserva
+  // (tipografía intermedia) en vez de palabras gigantes.
+  contact?: Contact
+  // Si está presente, el beat es una carta con secciones escalonadas.
+  menu?: MenuSection[]
 }
 
 const BEATS: Beat[] = [
   {
     at: 0.07,
-    eyebrow: 'Lumière',
-    title: 'Donde cada plato\nse convierte en deseo',
-    subtitle: 'Desliza para descubrir la experiencia',
+    words: ['sabor', 'que', 'seduce'],
+    subtitle: 'desliza para descubrir la experiencia',
+    from: 'bottom',
   },
   {
     at: 0.3,
-    eyebrow: 'Producto',
-    title: 'Ingredientes que\nhablan por sí solos',
-    subtitle: 'Seleccionados cada mañana, tratados con respeto',
+    from: 'right',
+    reviews: [
+      {
+        quote:
+          'una experiencia que recordaré toda la vida. cada plato, una obra de arte.',
+        author: 'laura m.',
+        rating: 5,
+        from: 'left',
+        atOffset: -0.045,
+      },
+      {
+        quote:
+          'servicio impecable y sabores que sorprenden. volveremos sin duda.',
+        author: 'carlos r.',
+        rating: 5,
+        from: 'bottom',
+        atOffset: 0,
+      },
+      {
+        quote:
+          'el mejor restaurante en el que he estado. atención al detalle absoluta.',
+        author: 'marta g.',
+        rating: 5,
+        from: 'right',
+        atOffset: 0.045,
+      },
+    ],
   },
   {
     at: 0.52,
-    eyebrow: 'Cocina',
-    title: 'El fuego como\nlenguaje',
-    subtitle: 'Técnica precisa al servicio del sabor',
+    from: 'top',
+    gallery: [
+      {
+        src: '/images/dishes/Atun.png',
+        label: 'tartar de atún rojo',
+        from: 'left',
+        atOffset: -0.045,
+      },
+      {
+        src: '/images/dishes/Carne.png',
+        label: 'solomillo a la brasa',
+        from: 'bottom',
+        atOffset: 0,
+      },
+      {
+        src: '/images/dishes/Coulan.png',
+        label: 'coulant de chocolate',
+        from: 'right',
+        atOffset: 0.045,
+      },
+    ],
   },
   {
     at: 0.74,
-    eyebrow: 'Mesa',
-    title: 'Una experiencia\nque se recuerda',
-    subtitle: 'Cada detalle pensado para ti',
+    from: 'bottom',
+    menu: [
+      {
+        title: 'primeros',
+        from: 'left',
+        atOffset: -0.045,
+        items: [
+          { name: 'ensalada de bogavante y cítricos', price: '24 €' },
+          { name: 'crema de calabaza trufada', price: '16 €' },
+          { name: 'carpaccio de vieiras', price: '22 €' },
+        ],
+      },
+      {
+        title: 'segundos',
+        from: 'bottom',
+        atOffset: 0,
+        items: [
+          { name: 'solomillo de ternera, jugo de vino tinto', price: '32 €' },
+          { name: 'lubina salvaje a la brasa', price: '29 €' },
+          { name: 'risotto de setas y parmesano', price: '21 €' },
+        ],
+      },
+      {
+        title: 'postres',
+        from: 'right',
+        atOffset: 0.045,
+        items: [
+          { name: 'coulant de chocolate 70%', price: '12 €' },
+          { name: 'tarta fina de manzana', price: '11 €' },
+          { name: 'sorbete de mango y maracuyá', price: '9 €' },
+        ],
+      },
+    ],
   },
   {
     at: 0.93,
-    eyebrow: 'Reserva',
-    title: 'Tu mesa te\nestá esperando',
-    subtitle: 'Vive Lumière esta misma semana',
+    from: 'bottom',
+    contact: {
+      tel: '+34 600 123 456',
+      email: 'reservas@lumiere.com',
+      address: 'calle del gourmet 12, madrid',
+      hours: 'martes a domingo · 13:00 – 23:30',
+    },
   },
+]
+
+// Posiciones escalonadas (estilo hero): se recorren por índice de palabra.
+const SLOTS = [
+  'left-4 top-[15%] md:left-10',
+  'right-4 top-[34%] md:right-10',
+  'left-[16%] top-[55%] md:left-[26%]',
+  'right-6 top-[70%] md:right-24',
+  'left-8 top-[80%] md:left-20',
 ]
 
 // Ventana de visibilidad de cada beat (mitad del ancho en unidades de progreso).
 const BEAT_RANGE = 0.12
 
-function beatStyle(progress: number, at: number) {
+// Fracción de la ventana (|d| <= HOLD) en la que el beat se ve nítido y
+// quieto: zona de lectura. Fuera de ella anima entrada/salida.
+const HOLD = 0.42
+
+// smootherstep: 6t^5 - 15t^4 + 10t^3 → aceleración/desaceleración suave
+const smoother = (t: number) => t * t * t * (t * (t * 6 - 15) + 10)
+
+// Distancia de desplazamiento en entrada/salida (px)
+const TRAVEL = 90
+
+function beatStyle(progress: number, at: number, from: Dir) {
   const d = (progress - at) / BEAT_RANGE // -1 .. 1 dentro de la ventana
   const ad = Math.abs(d)
-  if (ad >= 1) return { opacity: 0, y: d < 0 ? 48 : -48 }
-  const eased = 1 - ad * ad // curva suave (entra y sale)
-  return { opacity: eased, y: d * 44 }
+
+  // Fuera de la ventana: oculto
+  if (ad >= 1) return { opacity: 0, x: 0, y: 0, scale: 0.96, blur: 8 }
+
+  // Dentro de la meseta: estado de reposo, totalmente legible
+  if (ad <= HOLD) return { opacity: 1, x: 0, y: 0, scale: 1, blur: 0 }
+
+  // Tramos de entrada/salida: progreso 0→1 desde la meseta hasta el borde
+  const t = (ad - HOLD) / (1 - HOLD)
+  const e = smoother(t)
+  const mag = e * TRAVEL
+  // d<0 → entra desde `from`; d>0 → sale hacia el lado opuesto
+  const sign = d < 0 ? 1 : -1
+  let x = 0
+  let y = 0
+  if (from === 'bottom') y = sign * mag
+  else if (from === 'top') y = -sign * mag
+  else if (from === 'right') x = sign * mag
+  else x = -sign * mag // left
+  return { opacity: 1 - e, x, y, scale: 1 - e * 0.04, blur: e * 6 }
 }
 
-/**
- * Título de una sola línea horizontal que se reescala para caber siempre
- * en el ancho disponible, sin desbordar ni partirse en vertical.
- */
-function FitTitle({ text }: { text: string }) {
-  const wrapRef = useRef<HTMLDivElement>(null)
-  const innerRef = useRef<HTMLSpanElement>(null)
-  const [scale, setScale] = useState(1)
-
-  useLayoutEffect(() => {
-    const fit = () => {
-      const wrap = wrapRef.current
-      const inner = innerRef.current
-      if (!wrap || !inner) return
-      const avail = wrap.clientWidth
-      const natural = inner.scrollWidth
-      if (natural > 0) setScale(Math.min(1, avail / natural))
-    }
-    fit()
-    const ro = new ResizeObserver(fit)
-    if (wrapRef.current) ro.observe(wrapRef.current)
-    window.addEventListener('resize', fit)
-    return () => {
-      ro.disconnect()
-      window.removeEventListener('resize', fit)
-    }
-  }, [text])
-
+// Imagen de plato: si el archivo no existe aún, se oculta y queda el
+// placeholder elegante (fondo + etiqueta) en vez de un icono roto.
+function DishImg({ src, alt }: { src: string; alt: string }) {
+  const [ok, setOk] = useState(true)
+  if (!ok) return null
   return (
-    <div ref={wrapRef} className="w-full">
-      <span
-        ref={innerRef}
-        className="inline-block whitespace-nowrap font-medium leading-[1.05] tracking-[-0.5px] md:tracking-[-1px]"
-        style={{
-          fontSize: 'clamp(1.5rem, 6vw, 4.5rem)',
-          transform: `scale(${scale})`,
-          transformOrigin: 'center',
-        }}
-      >
-        {text}
-      </span>
-    </div>
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      onError={() => setOk(false)}
+      className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_12px_30px_rgba(0,0,0,0.7)]"
+    />
   )
 }
 
@@ -122,6 +260,8 @@ export default function VideoScrollSequence({
   const frameRef = useRef({ i: 0 })
   const [loaded, setLoaded] = useState(0)
   const [progress, setProgress] = useState(0)
+  // Juego de frames según el dispositivo, fijado al montar.
+  const [isMobile] = useState(isMobileViewport)
 
   // Precarga de todos los frames
   useEffect(() => {
@@ -132,7 +272,7 @@ export default function VideoScrollSequence({
     for (let i = 0; i < FRAME_COUNT; i++) {
       const img = new Image()
       img.decoding = 'async'
-      img.src = framePath(i)
+      img.src = framePath(i, isMobile)
       img.onload = img.onerror = () => {
         if (cancelled) return
         count += 1
@@ -145,10 +285,10 @@ export default function VideoScrollSequence({
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [isMobile])
 
-  // Dibujo "contain" con soporte retina: el frame se ve completo,
-  // sin recortes ni zoom; el fondo negro rellena el resto.
+  // "cover": cada juego de frames ya está compuesto para su formato
+  // (apaisado / vertical), así que llena la pantalla sin recortes raros.
   const draw = (index: number) => {
     const canvas = canvasRef.current
     const img = imagesRef.current[index]
@@ -167,8 +307,7 @@ export default function VideoScrollSequence({
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-    // "contain": escala para que el frame entero quepa en el canvas
-    const scale = Math.min(cw / img.naturalWidth, ch / img.naturalHeight)
+    const scale = Math.max(cw / img.naturalWidth, ch / img.naturalHeight)
     const dw = img.naturalWidth * scale
     const dh = img.naturalHeight * scale
     const dx = (cw - dw) / 2
@@ -238,36 +377,204 @@ export default function VideoScrollSequence({
         {/* Sin overlays: los frames se ven a plena luz/color.
            La legibilidad del texto se resuelve con text-shadow. */}
 
-        {/* Beats narrativos: aparecen y desaparecen con el scroll */}
-        <div className="absolute inset-0 flex items-center justify-center px-6">
+        {/* Beats estilo hero: palabras gigantes escalonadas que aparecen
+           y desaparecen con el scroll */}
+        <div className="absolute inset-0">
           {BEATS.map((beat, idx) => {
-            const s = beatStyle(progress, beat.at)
+            const s = beatStyle(progress, beat.at, beat.from)
+            // Carta y galería animan cada elemento solo → contenedor neutro
+            const selfAnimated =
+              !!beat.menu || !!beat.gallery || !!beat.reviews
             return (
               <div
                 key={idx}
-                className="absolute w-[90vw] max-w-3xl text-center text-white will-change-transform"
-                style={{
-                  opacity: s.opacity,
-                  transform: `translateY(${s.y}px)`,
-                  pointerEvents: s.opacity > 0.5 ? 'auto' : 'none',
-                  textShadow: '0 2px 12px rgba(0,0,0,0.85)',
-                }}
+                className="absolute inset-0 text-white will-change-transform"
+                style={
+                  selfAnimated
+                    ? {
+                        pointerEvents: 'none',
+                        textShadow: '0 2px 12px rgba(0,0,0,0.85)',
+                      }
+                    : {
+                        opacity: s.opacity,
+                        transform: `scale(${s.scale})`,
+                        filter: s.blur ? `blur(${s.blur}px)` : 'none',
+                        pointerEvents: s.opacity > 0.5 ? 'auto' : 'none',
+                        textShadow: '0 2px 12px rgba(0,0,0,0.85)',
+                      }
+                }
               >
-                {beat.eyebrow && (
-                  <span className="mb-4 inline-block text-[11px] font-medium uppercase tracking-[0.32em] text-white/60">
-                    {beat.eyebrow}
-                  </span>
+                {beat.reviews ? (
+                  <div className="absolute inset-0 flex items-center justify-center px-6">
+                    <div className="flex flex-col items-stretch gap-8 md:flex-row md:gap-10">
+                      {beat.reviews.map((r, ri) => {
+                        const rs = beatStyle(
+                          progress,
+                          beat.at + r.atOffset,
+                          r.from
+                        )
+                        return (
+                          <figure
+                            key={ri}
+                            className="flex w-full max-w-xs flex-col items-center gap-5 text-center lowercase will-change-transform"
+                            style={{
+                              opacity: rs.opacity,
+                              transform: `translate(${rs.x}px, ${rs.y}px) scale(${rs.scale})`,
+                              filter: rs.blur ? `blur(${rs.blur}px)` : 'none',
+                            }}
+                          >
+                            <span className="text-sm tracking-[0.3em] text-white">
+                              {'★'.repeat(r.rating)}
+                            </span>
+                            <blockquote className="text-base leading-relaxed text-white/90 md:text-lg">
+                              «{r.quote}»
+                            </blockquote>
+                            <figcaption className="text-xs text-white/55">
+                              — {r.author}
+                            </figcaption>
+                          </figure>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ) : beat.gallery ? (
+                  <div className="absolute inset-0 flex items-center justify-center px-6">
+                    <div className="flex flex-col items-center gap-8 md:flex-row md:items-end md:gap-10">
+                      {beat.gallery.map((item, gi) => {
+                        const gs = beatStyle(
+                          progress,
+                          beat.at + item.atOffset,
+                          item.from
+                        )
+                        return (
+                          <figure
+                            key={gi}
+                            className="will-change-transform"
+                            style={{
+                              opacity: gs.opacity,
+                              transform: `translate(${gs.x}px, ${gs.y}px) scale(${gs.scale})`,
+                              filter: gs.blur ? `blur(${gs.blur}px)` : 'none',
+                            }}
+                          >
+                            {/* PNG sin fondo: el plato flota sobre el frame */}
+                            <div className="relative flex h-56 w-48 items-center justify-center md:h-72 md:w-64">
+                              <DishImg src={item.src} alt={item.label} />
+                            </div>
+                            <figcaption className="mt-4 text-center text-sm lowercase text-white/85">
+                              {item.label}
+                            </figcaption>
+                          </figure>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ) : beat.menu ? (
+                  <div className="absolute inset-0 flex items-center justify-center px-6">
+                    <div className="flex flex-col gap-10 md:flex-row md:items-start md:gap-16">
+                      {beat.menu.map((section, si) => {
+                        const ms = beatStyle(
+                          progress,
+                          beat.at + section.atOffset,
+                          section.from
+                        )
+                        return (
+                          <div
+                            key={si}
+                            className="w-full max-w-xs lowercase will-change-transform"
+                            style={{
+                              opacity: ms.opacity,
+                              transform: `translate(${ms.x}px, ${ms.y}px) scale(${ms.scale})`,
+                              filter: ms.blur ? `blur(${ms.blur}px)` : 'none',
+                            }}
+                          >
+                            <h3 className="hero-title text-2xl font-medium md:text-3xl">
+                              {section.title}
+                            </h3>
+                            <span className="mt-3 mb-5 block h-px w-12 bg-white/40" />
+                            <ul className="flex flex-col gap-4">
+                              {section.items.map((it, ii) => (
+                                <li
+                                  key={ii}
+                                  className="flex items-baseline justify-between gap-5"
+                                >
+                                  <span className="text-sm leading-snug text-white/85 md:text-base">
+                                    {it.name}
+                                  </span>
+                                  <span className="shrink-0 text-sm font-medium text-white md:text-base">
+                                    {it.price}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ) : beat.contact ? (
+                  <div
+                    className="absolute inset-0 flex flex-col items-center justify-center gap-7 px-6 text-center lowercase"
+                    style={{ transform: `translate(${s.x}px, ${s.y}px)` }}
+                  >
+                    <h2 className="hero-title text-4xl font-medium md:text-6xl">
+                      reserva tu mesa
+                    </h2>
+                    <span className="h-px w-16 bg-white/40" />
+                    <div className="flex flex-col gap-2 text-base text-white/85 md:text-lg">
+                      <a
+                        href={`tel:${beat.contact.tel.replace(/\s/g, '')}`}
+                        className="transition-opacity hover:opacity-70"
+                      >
+                        {beat.contact.tel}
+                      </a>
+                      <a
+                        href={`mailto:${beat.contact.email}`}
+                        className="transition-opacity hover:opacity-70"
+                      >
+                        {beat.contact.email}
+                      </a>
+                      <span className="text-white/65">
+                        {beat.contact.address}
+                      </span>
+                      <span className="text-white/65">
+                        {beat.contact.hours}
+                      </span>
+                    </div>
+                    <a
+                      href="#"
+                      className="mt-1 rounded-full border border-white/30 px-9 py-4 text-sm font-medium text-white transition-colors hover:border-white hover:bg-white hover:text-black"
+                    >
+                      reservar ahora
+                    </a>
+                  </div>
+                ) : (
+                  <>
+                    {beat.words?.map((word, i) => (
+                      <h2
+                        key={i}
+                        className={`hero-title absolute font-medium lowercase text-[14vw] md:text-[13vw] ${
+                          SLOTS[i % SLOTS.length]
+                        }`}
+                        style={{
+                          // micro-desfase por palabra: entran/salen escalonadas
+                          transform: `translate(${s.x * (1 + i * 0.35)}px, ${
+                            s.y * (1 + i * 0.35)
+                          }px)`,
+                        }}
+                      >
+                        {word}
+                      </h2>
+                    ))}
+                    {beat.subtitle && (
+                      <p
+                        className="absolute left-6 top-[46%] max-w-[260px] text-[15px] font-normal lowercase leading-snug text-white/90 md:left-10"
+                        style={{ transform: `translate(${s.x}px, ${s.y}px)` }}
+                      >
+                        {beat.subtitle}
+                      </p>
+                    )}
+                  </>
                 )}
-                {/* Display: una sola línea horizontal, reescalada para
-                   caber siempre en el ancho disponible (design.md §3). */}
-                <FitTitle text={beat.title.replace(/\n/g, ' ')} />
-                {beat.subtitle && (
-                  <p className="mx-auto mt-4 max-w-xl text-sm font-normal text-white/70 md:mt-6 md:text-base">
-                    {beat.subtitle}
-                  </p>
-                )}
-                {/* Separador monocromo */}
-                <span className="mx-auto mt-8 block h-px w-16 bg-white/40" />
               </div>
             )
           })}

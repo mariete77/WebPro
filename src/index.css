@@ -12,9 +12,8 @@
   --color-light-gray: #a0a0a0;
   --color-overlay: #efefef;
 
-  /* Tipografía: n-c / p-g no son públicas → Inter como sustituto del fallback */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  /* Tipografía: Readex Pro (PruebaDesign.md) */
+  --font-sans: 'Readex Pro', system-ui, -apple-system, sans-serif;
 
   /* Escala de espaciado base-4 (design.md §5) */
   --spacing-2xl: 44px;
@@ -31,8 +30,20 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 html {
   scroll-behavior: smooth;
+}
+
+/* Tipografía hero: gigante, condensada y ajustada (PruebaDesign.md) */
+.hero-title {
+  letter-spacing: -0.04em;
+  line-height: 0.95;
 }
 
 body {
@@ -48,14 +59,4 @@ body {
   max-width: 100%;
   margin: 0;
   text-align: left;
-}
-
-/* Bordes rectos no negociables: 0px radius en todos los componentes */
-button,
-input,
-textarea,
-select,
-a,
-img {
-  border-radius: 0;
 }

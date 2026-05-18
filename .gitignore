@@ -22,3 +22,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Artefactos no-web / herramientas
+.opencode/
+.cline/
+data/
+andrej-karpathy-skills-main/
+*.exe
+# Vídeos fuente (los frames se derivan a public/images/)
+Video_unido_2_1.mp4
+*.mp4
