@@ -76,13 +76,13 @@ type Beat = {
 
 const BEATS: Beat[] = [
   {
-    at: 0.07,
+    at: 0,
     words: ['sabor', 'que', 'seduce'],
     subtitle: 'desliza para descubrir la experiencia',
     from: 'bottom',
   },
   {
-    at: 0.3,
+    at: 0.32,
     from: 'right',
     reviews: [
       {
@@ -112,14 +112,14 @@ const BEATS: Beat[] = [
     ],
   },
   {
-    at: 0.52,
+    at: 0.6,
     from: 'top',
     gallery: [
       {
         src: '/images/dishes/Atun.png',
         label: 'tartar de atún rojo',
         from: 'left',
-        atOffset: -0.045,
+        atOffset: -0.13,
       },
       {
         src: '/images/dishes/Carne.png',
@@ -131,12 +131,12 @@ const BEATS: Beat[] = [
         src: '/images/dishes/Coulan.png',
         label: 'coulant de chocolate',
         from: 'right',
-        atOffset: 0.045,
+        atOffset: 0.13,
       },
     ],
   },
   {
-    at: 0.74,
+    at: 0.83,
     from: 'bottom',
     menu: [
       {
@@ -172,7 +172,7 @@ const BEATS: Beat[] = [
     ],
   },
   {
-    at: 0.93,
+    at: 1,
     from: 'bottom',
     contact: {
       tel: '+34 600 123 456',
@@ -439,7 +439,7 @@ export default function VideoScrollSequence({
                   </div>
                 ) : beat.gallery ? (
                   <div className="absolute inset-0 flex items-center justify-center px-6">
-                    <div className="flex flex-col items-center gap-8 md:flex-row md:items-end md:gap-10">
+                    <div className="relative flex h-full w-full items-center justify-center md:flex-row md:items-end md:gap-10">
                       {beat.gallery.map((item, gi) => {
                         const gs = beatStyle(
                           progress,
@@ -449,20 +449,24 @@ export default function VideoScrollSequence({
                         return (
                           <figure
                             key={gi}
-                            className="will-change-transform"
+                            className="will-change-transform max-md:absolute max-md:inset-0 max-md:flex max-md:items-center max-md:justify-center"
                             style={{
                               opacity: gs.opacity,
                               transform: `translate(${gs.x}px, ${gs.y}px) scale(${gs.scale})`,
                               filter: gs.blur ? `blur(${gs.blur}px)` : 'none',
+                              pointerEvents: gs.opacity > 0.1 ? 'auto' : 'none',
                             }}
                           >
                             {/* PNG sin fondo: el plato flota sobre el frame */}
-                            <div className="relative flex h-56 w-48 items-center justify-center md:h-72 md:w-64">
+                            <div className="relative flex h-80 w-72 items-center justify-center md:h-96 md:w-80">
                               <DishImg src={item.src} alt={item.label} />
                             </div>
-                            <figcaption className="mt-4 text-center text-sm lowercase text-white/85">
-                              {item.label}
-                            </figcaption>
+                            <div className="mt-4 flex flex-col items-center gap-2">
+                              <span className="block h-px w-8 bg-white/40" />
+                              <figcaption className="text-center text-sm lowercase text-white/85">
+                                {item.label}
+                              </figcaption>
+                            </div>
                           </figure>
                         )
                       })}
