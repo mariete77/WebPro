@@ -82,7 +82,7 @@ const BEATS: Beat[] = [
     from: 'bottom',
   },
   {
-    at: 0.32,
+    at: 0.2,
     from: 'right',
     reviews: [
       {
@@ -112,14 +112,14 @@ const BEATS: Beat[] = [
     ],
   },
   {
-    at: 0.6,
+    at: 0.5,
     from: 'top',
     gallery: [
       {
         src: '/images/dishes/Atun.png',
         label: 'tartar de atún rojo',
         from: 'left',
-        atOffset: -0.13,
+        atOffset: -0.08,
       },
       {
         src: '/images/dishes/Carne.png',
@@ -131,12 +131,12 @@ const BEATS: Beat[] = [
         src: '/images/dishes/Coulan.png',
         label: 'coulant de chocolate',
         from: 'right',
-        atOffset: 0.13,
+        atOffset: 0.08,
       },
     ],
   },
   {
-    at: 0.83,
+    at: 0.8,
     from: 'bottom',
     menu: [
       {
@@ -193,7 +193,7 @@ const SLOTS = [
 ]
 
 // Ventana de visibilidad de cada beat (mitad del ancho en unidades de progreso).
-const BEAT_RANGE = 0.12
+const BEAT_RANGE = 0.08
 
 // Fracción de la ventana (|d| <= HOLD) en la que el beat se ve nítido y
 // quieto: zona de lectura. Fuera de ella anima entrada/salida.
@@ -466,15 +466,36 @@ export default function VideoScrollSequence({
                           beat.at + item.atOffset,
                           item.from
                         )
+
+                        let displayOpacity = gs.opacity
+                        if (isMobile) {
+                          const ats = beat.gallery!.map(i => beat.at + i.atOffset)
+                          const sorted = [...ats].sort((a, b) => a - b)
+                          const myAt = beat.at + item.atOffset
+                          const sortedIdx = sorted.indexOf(myAt)
+                          const left = sortedIdx > 0 ? (sorted[sortedIdx] + sorted[sortedIdx - 1]) / 2 : sorted[sortedIdx] - 0.07
+                          const right = sortedIdx < sorted.length - 1 ? (sorted[sortedIdx] + sorted[sortedIdx + 1]) / 2 : sorted[sortedIdx] + 0.07
+                          const mid = (left + right) / 2
+                          const halfRange = (right - left) / 2
+                          const d = (progress - mid) / halfRange
+                          const ad = Math.abs(d)
+                          if (ad >= 1) displayOpacity = 0
+                          else if (ad <= 0.42) displayOpacity = 1
+                          else {
+                            const t = (ad - 0.42) / (1 - 0.42)
+                            displayOpacity = 1 - smoother(t)
+                          }
+                        }
+
                         return (
                           <figure
                             key={gi}
                             className="will-change-transform max-md:absolute max-md:inset-0 max-md:flex max-md:items-center max-md:justify-center"
                             style={{
-                              opacity: gs.opacity,
+                              opacity: displayOpacity,
                               transform: `translate(${gs.x}px, ${gs.y}px) scale(${gs.scale})`,
                               filter: gs.blur ? `blur(${gs.blur}px)` : 'none',
-                              pointerEvents: gs.opacity > 0.1 ? 'auto' : 'none',
+                              pointerEvents: displayOpacity > 0.1 ? 'auto' : 'none',
                             }}
                           >
                             {/* PNG sin fondo: el plato flota sobre el frame */}
