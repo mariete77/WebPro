@@ -252,7 +252,7 @@ type Props = {
 }
 
 export default function VideoScrollSequence({
-  scrollHeightVh = 760,
+  scrollHeightVh = 500,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -318,9 +318,14 @@ export default function VideoScrollSequence({
   }
 
   // Scroll → frame + progreso, con GSAP ScrollTrigger (scrub)
+  // Optimizado: RAF throttle + separación de estado para evitar re-renders innecesarios
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
+
+    let rafId: number | null = null
+    let pendingProgress: number | null = null
+    let pendingFrame: number | null = null
 
     const ctx = gsap.context(() => {
       const state = frameRef.current
@@ -336,11 +341,25 @@ export default function VideoScrollSequence({
             FRAME_COUNT - 1,
             Math.round(p * (FRAME_COUNT - 1))
           )
-          if (i !== state.i) {
-            state.i = i
-            draw(i)
+
+          // Throttle: solo schedulea un frame si hay cambios pendientes
+          if (i !== state.i || pendingProgress !== p) {
+            pendingFrame = i
+            pendingProgress = p
+
+            if (rafId === null) {
+              rafId = requestAnimationFrame(() => {
+                if (pendingFrame !== null && pendingFrame !== state.i) {
+                  state.i = pendingFrame
+                  draw(pendingFrame)
+                }
+                if (pendingProgress !== null) {
+                  setProgress(Math.round(pendingProgress * 1000) / 1000)
+                }
+                rafId = null
+              })
+            }
           }
-          setProgress(Math.round(p * 1000) / 1000)
         },
       })
     }, container)
@@ -351,6 +370,7 @@ export default function VideoScrollSequence({
     return () => {
       ctx.revert()
       window.removeEventListener('resize', onResize)
+      if (rafId !== null) cancelAnimationFrame(rafId)
     }
   }, [])
 
